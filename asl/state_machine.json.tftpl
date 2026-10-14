@@ -1,0 +1,60 @@
+{
+  "Comment": "Hourly Snyk audit log transfer: list orgs, then transfer each org's audit logs",
+  "StartAt": "GetSnykOrgs",
+  "States": {
+    "GetSnykOrgs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${get_snyk_orgs_arn}",
+        "Payload": {
+          "scheduledTime.$": "$.scheduledTime"
+        }
+      },
+      "ResultSelector": {
+        "orgs.$": "$.Payload.orgs"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException", "States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "TransferOrgs"
+    },
+    "TransferOrgs": {
+      "Type": "Map",
+      "ItemsPath": "$.orgs",
+      "MaxConcurrency": ${map_max_concurrency},
+      "ToleratedFailurePercentage": 100,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "TransferAuditLogs",
+        "States": {
+          "TransferAuditLogs": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${transfer_audit_logs_arn}",
+              "Payload.$": "$"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException", "Lambda.Unknown", "States.Timeout"],
+                "IntervalSeconds": 10,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              }
+            ],
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

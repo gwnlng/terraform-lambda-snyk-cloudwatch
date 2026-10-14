@@ -1,0 +1,10 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+tfplan
+builds/
+node_modules/
+lambda/dist/
+lambda/function.zip

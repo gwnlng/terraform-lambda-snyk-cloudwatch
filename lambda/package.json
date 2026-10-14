@@ -1,0 +1,21 @@
+{
+  "name": "snyk-audit-log-lambdas",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && esbuild src/get_snyk_orgs.ts src/transfer_audit_logs.ts --bundle --platform=node --target=node22 --format=esm --outdir=dist --out-extension:.js=.mjs --external:@aws-sdk/* --sourcemap",
+    "package": "npm run build && find dist -exec touch -t 198001010000 {} + && rm -f function.zip && (cd dist && zip -qrX ../function.zip .)",
+    "test": "node --test test/*.test.ts",
+    "clean": "rm -rf dist function.zip"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-cloudwatch-logs": "^3.700.0",
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/client-secrets-manager": "^3.700.0",
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.7.0"
+  }
+}
